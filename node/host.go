@@ -9,6 +9,7 @@ import (
 	"dht-p2p/utils"
 
 	"github.com/libp2p/go-libp2p"
+  "github.com/libp2p/go-libp2p/p2p/host/autorelay"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -71,8 +72,25 @@ func NewNode(ctx context.Context, cfg *config.Config) (*Node, error) {
 		// Connection manager for resource management
 		libp2p.ConnectionManager(mustCreateConnManager(cfg)),
 
-		// Enable relay client for nodes behind NAT
-		libp2p.EnableRelay(),
+	}
+
+	if cfg.EnableAutoRelay {
+		var relays []peer.AddrInfo
+
+		for _, addr := range cfg.BootstrapPeers {
+			ai, err := peer.AddrInfoFromString(addr)
+			if err != nil {
+				continue
+			}
+			relays = append(relays, *ai)
+		}
+
+		opts = append(opts,
+			libp2p.EnableAutoRelay(
+				autorelay.WithStaticRelays(relays),
+			),
+		)
+
 	}
 
 	// Add private network protection if configured

@@ -21,6 +21,7 @@ type Config struct {
 	// NAT configuration
 	EnableAutoNAT   bool
 	EnableRelay     bool
+	EnableAutoRelay bool
 	EnableHolePunch bool
 
 	// Node identity
@@ -52,7 +53,8 @@ func DefaultConfig() *Config {
 		GracePeriod:     time.Minute,
 		DHTMode:         "auto",
 		EnableAutoNAT:   true,
-		EnableRelay:     true,
+		EnableRelay:     false,
+		EnableAutoRelay: true,
 		EnableHolePunch: true,
 		PrivateKeyPath:  "",
 		ProtectKey:      "",
