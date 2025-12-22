@@ -16,7 +16,7 @@ import (
 	"dht-p2p/protocols"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	// "github.com/libp2p/go-libp2p/core/routing"
+	routing "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 )
 
 func main() {
@@ -76,8 +76,11 @@ func main() {
 		fmt.Printf("⚠️  Warning: Failed to connect to some bootstrap peers: %v\n", err)
 	}
 
-	// routingDiscovery := routing.NewRoutingDiscovery(dht)
-	// routingDiscovery.Advertise(ctx, "my-app")
+	rd := routing.NewRoutingDiscovery(n.DHT)
+	_, err = rd.Advertise(ctx, "dht-p2p-message")
+	if err != nil {
+		fmt.Print(err);
+	}
 	
 	// Print node information
 	fmt.Println("\n✅ Node is running!")
@@ -103,20 +106,23 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				peers := n.Host.Network().Peers()
-				fmt.Printf("\n👥 Connected peers: %d\n", len(peers))
-				if len(peers) > 0 {
-					fmt.Println("Peers:")
-					for i, p := range peers {
-						if i < 5 { // Show first 5 peers
-							fmt.Printf("   - %s\n", p)
+				var peers []peer.ID
+				for _, p := range n.Host.Network().Peers() {
+					protos, err := n.Host.Peerstore().GetProtocols(p)
+					if err != nil {
+						continue
+					}
+					for _, proto := range protos {
+						if proto == protocols.MessageProtocol {
+							peers = append(peers, p)
+							break
 						}
 					}
-					if len(peers) > 5 {
-						fmt.Printf("   ... and %d more\n", len(peers)-5)
-					}
 				}
-				fmt.Print("> ")
+				fmt.Printf("Connected peers: %d\n", len(peers))
+				for _, p := range peers {
+					fmt.Printf("   - %s\n", p)
+				}
 			}
 		}
 	}()
@@ -185,10 +191,51 @@ func main() {
 				}
 
 			case "peers":
-				peers := n.Host.Network().Peers()
+
+				fmt.Println("Connected peers:", len(n.Host.Network().Peers()))
+				fmt.Println("DHT peers:", len(n.DHT.RoutingTable().ListPeers()))
+
+				var peers []peer.ID
+				for _, p := range n.Host.Network().Peers() {
+					protos, err := n.Host.Peerstore().GetProtocols(p)
+					if err != nil {
+						continue
+					}
+					for _, proto := range protos {
+						if proto == protocols.MessageProtocol {
+							peers = append(peers, p)
+							break
+						}
+					}
+				}
 				fmt.Printf("Connected peers: %d\n", len(peers))
 				for _, p := range peers {
 					fmt.Printf("   - %s\n", p)
+				}
+
+			case "hiddenpeers":
+				peers := n.Host.Network().Peers()
+				fmt.Printf("\n👥 Hidden peers: %d\n", len(peers))
+				if len(peers) > 0 {
+					fmt.Println("Peers:")
+					for _, p := range peers {
+						fmt.Printf("   - %s\n", p)
+					}
+				}
+
+			case "knownpeers":
+				peerCh, err := rd.FindPeers(ctx, "dht-p2p-message")
+				if err != nil {
+					fmt.Print("wrong: ");
+					fmt.Println(err);
+					return;
+				}
+
+				for p := range peerCh {
+					if p.ID == n.Host.ID() {
+						continue
+					}
+					fmt.Println("Discovered peer:", p.ID)
 				}
 
 			case "info":

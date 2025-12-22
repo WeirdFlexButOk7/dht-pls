@@ -121,13 +121,14 @@ func (n *Node) InitDHT(ctx context.Context) error {
 	case "client":
 		mode = dht.ModeClient
 	default:
-		mode = dht.ModeAutoServer
+		mode = dht.ModeAuto
 	}
 
 	// Create DHT with proper options
 	kadDHT, err := dht.New(ctx, n.Host,
 		dht.Mode(mode),
 		dht.BootstrapPeers(n.parseBootstrapPeers()...),
+		dht.ProtocolPrefix("/dht-p2p"),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create DHT: %w", err)
