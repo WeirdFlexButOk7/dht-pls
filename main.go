@@ -72,7 +72,11 @@ func main() {
 		fmt.Printf("⚠️  Warning: Failed to connect to some bootstrap peers: %v\n", err)
 	}
 
-	_, err := client.Reserve(ctx, n.Host, bootstrapAddrInfo)
+	bootstrapAddrInfo, err := peer.AddrInfoFromString(*bootstrap)
+	if err != nil {
+			panic(err)
+	}
+	_, err = client.Reserve(ctx, n.Host, *bootstrapAddrInfo)
 	if err != nil {
 			fmt.Println("reservation failed:", err)
 	} else {
