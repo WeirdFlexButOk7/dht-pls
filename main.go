@@ -236,6 +236,17 @@ func main() {
 						continue
 					}
 					fmt.Println("Discovered peer:", p.ID)
+					err := n.Host.Connect(ctx, p)
+					if err != nil {
+						fmt.Println("connect failed:", err)
+					} else {
+						fmt.Println("Connected to peer:", p.ID)
+					}
+				}
+			
+			case "type":
+				for _, c := range n.Host.Network().Conns() {
+					fmt.Println(c.RemotePeer(), c.Stat().Direction, c.RemoteMultiaddr())
 				}
 
 			case "info":
