@@ -26,10 +26,11 @@ func main() {
 	keyPath := flag.String("key", "", "Path to private key file")
 	dhtMode := flag.String("dht-mode", "auto", "DHT mode: server, client, or auto")
 	privateNet := flag.String("private", "", "Private network key (leave empty for public network)")
+	nodeType := flag.String("type", "peer", "Bootstrap node or normal peer node")
 	flag.Parse()
 
 	// Create configuration
-	cfg := config.DefaultConfig()
+	cfg := config.DefaultConfig(nodeType)
 
 	// Override with command-line flags
 	if *port != 0 {

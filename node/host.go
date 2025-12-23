@@ -139,7 +139,7 @@ func (n *Node) InitDHT(ctx context.Context) error {
 	case "client":
 		mode = dht.ModeClient
 	default:
-		mode = dht.ModeAuto
+		mode = dht.ModeServer
 	}
 
 	// Create DHT with proper options
