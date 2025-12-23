@@ -14,9 +14,11 @@ import (
 	"dht-p2p/config"
 	"dht-p2p/node"
 	"dht-p2p/protocols"
+	// "dht-p2p/utils"
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	routing "github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	client "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 )
 
 func main() {
@@ -68,6 +70,13 @@ func main() {
 	fmt.Println("🔗 Connecting to bootstrap peers...")
 	if err := n.Connect(ctx); err != nil {
 		fmt.Printf("⚠️  Warning: Failed to connect to some bootstrap peers: %v\n", err)
+	}
+
+	_, err := client.Reserve(ctx, n.Host, bootstrapAddrInfo)
+	if err != nil {
+			fmt.Println("reservation failed:", err)
+	} else {
+			fmt.Println("reservation succeeded")
 	}
 
 	rd := routing.NewRoutingDiscovery(n.DHT)
@@ -122,6 +131,27 @@ func main() {
 						fmt.Println("Connected to peer:", p.ID)
 					}
 				}
+
+				// pid, err := peer.Decode("12D3KooWR71NruEKH1WLRMn7eRBoVzaXDxu5dSKF4A9bdKmS9Lpb")
+				// if err != nil {
+				// 		panic(err)
+				// }
+				// fmt.Println("target peer:", pid.String())
+
+				// err = utils.ConnectViaBootstrapRelay(
+				// 		ctx,
+				// 		n.Host,
+				// 		"/ip4/20.17.98.81/tcp/5090/p2p/12D3KooWAkBihGFKPyM2vfT3JmHMJ6RjdxxuZpJc9babUfoZAudX",
+				// 		pid,
+				// )
+
+				// if err != nil {
+				// 		fmt.Println("relay connect failed:", err)
+				// } else {
+				// 		fmt.Println("relay connect succeeded")
+				// }
+
+
 			}
 		}
 	}()
