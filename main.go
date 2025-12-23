@@ -20,19 +20,16 @@ import (
 )
 
 func main() {
-	// Parse command-line flags
 	port := flag.Int("port", 0, "Port to listen on (0 for random)")
 	bootstrap := flag.String("bootstrap", "", "Comma-separated list of bootstrap peers")
 	keyPath := flag.String("key", "", "Path to private key file")
-	dhtMode := flag.String("dht-mode", "auto", "DHT mode: server, client, or auto")
+	dhtMode := flag.String("dht-mode", "server", "DHT mode: server, client, or auto")
 	privateNet := flag.String("private", "", "Private network key (leave empty for public network)")
 	nodeType := flag.String("type", "peer", "Bootstrap node or normal peer node")
 	flag.Parse()
 
-	// Create configuration
 	cfg := config.DefaultConfig(nodeType)
 
-	// Override with command-line flags
 	if *port != 0 {
 		cfg.ListenAddresses = []string{
 			fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", *port),
@@ -51,11 +48,9 @@ func main() {
 	cfg.DHTMode = *dhtMode
 	cfg.ProtectKey = *privateNet
 
-	// Create context that can be cancelled
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Create and start the node
 	fmt.Println("🚀 Starting P2P node...")
 	n, err := node.NewNode(ctx, cfg)
 	if err != nil {
@@ -64,14 +59,12 @@ func main() {
 	}
 	defer n.Close()
 
-	// Initialize DHT
 	fmt.Println("🔍 Initializing DHT for peer discovery...")
 	if err := n.InitDHT(ctx); err != nil {
 		fmt.Printf("❌ Failed to initialize DHT: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Connect to bootstrap peers
 	fmt.Println("🔗 Connecting to bootstrap peers...")
 	if err := n.Connect(ctx); err != nil {
 		fmt.Printf("⚠️  Warning: Failed to connect to some bootstrap peers: %v\n", err)
@@ -83,7 +76,6 @@ func main() {
 		fmt.Print(err);
 	}
 	
-	// Print node information
 	fmt.Println("\n✅ Node is running!")
 	fmt.Printf("📍 Peer ID: %s\n", n.Host.ID())
 	fmt.Println("📡 Listening on:")
@@ -91,13 +83,11 @@ func main() {
 		fmt.Printf("   %s\n", addr)
 	}
 
-	// Setup message handler
 	msgHandler := protocols.NewMessageHandler(n.Host, n.DHT, func(msg *protocols.Message) {
 		fmt.Printf("\n📨 Message from %s: %s\n", msg.From, msg.Payload)
 		fmt.Print("> ")
 	})
 
-	// Print connected peers periodically
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
@@ -107,32 +97,38 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				var peers []peer.ID
-				for _, p := range n.Host.Network().Peers() {
-					protos, err := n.Host.Peerstore().GetProtocols(p)
-					if err != nil {
+				if err := n.DHT.Bootstrap(ctx); err != nil {
+					fmt.Print("some wrong in DHT.bootstrap")
+					fmt.Println(err);
+					return;
+				}
+
+				peerCh, err := rd.FindPeers(ctx, "dht-p2p-message")
+				if err != nil {
+					fmt.Print("wrong: ");
+					fmt.Println(err);
+					return;
+				}
+
+				for p := range peerCh {
+					if p.ID == n.Host.ID() {
 						continue
 					}
-					for _, proto := range protos {
-						if proto == protocols.MessageProtocol {
-							peers = append(peers, p)
-							break
-						}
+					fmt.Println("Discovered peer:", p.ID)
+					err := n.Host.Connect(ctx, p)
+					if err != nil {
+						fmt.Println("connect failed:", err)
+					} else {
+						fmt.Println("Connected to peer:", p.ID)
 					}
-				}
-				fmt.Printf("Connected peers: %d\n", len(peers))
-				for _, p := range peers {
-					fmt.Printf("   - %s\n", p)
 				}
 			}
 		}
 	}()
 
-	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Start interactive CLI
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Println("\n💬 Commands:")
@@ -192,7 +188,6 @@ func main() {
 				}
 
 			case "peers":
-
 				fmt.Println("Connected peers:", len(n.Host.Network().Peers()))
 				fmt.Println("DHT peers:", len(n.DHT.RoutingTable().ListPeers()))
 
@@ -212,16 +207,6 @@ func main() {
 				fmt.Printf("Connected peers: %d\n", len(peers))
 				for _, p := range peers {
 					fmt.Printf("   - %s\n", p)
-				}
-
-			case "hiddenpeers":
-				peers := n.Host.Network().Peers()
-				fmt.Printf("\n👥 Hidden peers: %d\n", len(peers))
-				if len(peers) > 0 {
-					fmt.Println("Peers:")
-					for _, p := range peers {
-						fmt.Printf("   - %s\n", p)
-					}
 				}
 
 			case "knownpeers":
@@ -272,12 +257,10 @@ func main() {
 		}
 	}()
 
-	// Wait for shutdown signal
 	<-sigChan
 	fmt.Println("\n🛑 Received shutdown signal, closing node...")
 	cancel()
 
-	// Give some time for graceful shutdown
 	time.Sleep(time.Second)
 	fmt.Println("👋 Goodbye!")
 }
