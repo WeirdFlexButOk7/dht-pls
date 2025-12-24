@@ -128,12 +128,12 @@ func main() {
 						continue
 					}
 					fmt.Println("Discovered peer:", p.ID)
-					err := n.Host.Connect(ctx, p)
-					if err != nil {
-						fmt.Println("connect failed:", err)
-					} else {
-						fmt.Println("Connected to peer:", p.ID)
-					}
+					// err := n.Host.Connect(ctx, p)
+					// if err != nil {
+					// 	fmt.Println("connect failed:", err)
+					// } else {
+					// 	fmt.Println("Connected to peer:", p.ID)
+					// }
 				}
 
 				// pid, err := peer.Decode("12D3KooWR71NruEKH1WLRMn7eRBoVzaXDxu5dSKF4A9bdKmS9Lpb")
@@ -256,12 +256,12 @@ func main() {
 						continue
 					}
 					fmt.Println("Discovered peer:", p.ID)
-					err := n.Host.Connect(ctx, p)
-					if err != nil {
-						fmt.Println("connect failed:", err)
-					} else {
-						fmt.Println("Connected to peer:", p.ID)
-					}
+					// err := n.Host.Connect(ctx, p)
+					// if err != nil {
+					// 	fmt.Println("connect failed:", err)
+					// } else {
+					// 	fmt.Println("Connected to peer:", p.ID)
+					// }
 				}
 			
 			case "type":
