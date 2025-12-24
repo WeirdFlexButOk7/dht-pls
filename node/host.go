@@ -9,6 +9,7 @@ import (
 	"dht-p2p/utils"
 
 	"github.com/libp2p/go-libp2p"
+  // "github.com/libp2p/go-libp2p/p2p/host/relaysvc"
   "github.com/libp2p/go-libp2p/p2p/host/autorelay"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -19,6 +20,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 
 	"github.com/multiformats/go-multiaddr"
 )
@@ -113,12 +115,21 @@ func NewNode(ctx context.Context, cfg *config.Config) (*Node, error) {
 		opts = append(opts, libp2p.EnableRelayService())
 	}
 
-	// Create the libp2p host
 	h, err := libp2p.New(opts...)
 	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
+			return nil, err
 	}
+
+	// START RELAY V2 SERVICE
+	_, err = relayv2.New(h)
+	if err != nil {
+			panic(err)
+	}
+
+	for _, pp := range h.Mux().Protocols() {
+			fmt.Println(pp)
+	}
+
 
 	node := &Node{
 		Host:   h,
