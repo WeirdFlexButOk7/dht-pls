@@ -72,16 +72,39 @@ func main() {
 		fmt.Printf("⚠️  Warning: Failed to connect to some bootstrap peers: %v\n", err)
 	}
 
-	bootstrapAddrInfo, err := peer.AddrInfoFromString(*bootstrap)
-	if err != nil {
-			panic(err)
+	bootstrapAddrs := strings.Split(*bootstrap, ",")
+	for _, addr := range bootstrapAddrs {
+			ai, err := peer.AddrInfoFromString(addr)
+			if err != nil {
+					fmt.Println("invalid bootstrap addr:", addr, err)
+					continue
+			}
+
+			// Ensure we are connected first
+			if err := n.Host.Connect(ctx, *ai); err != nil {
+					fmt.Println("connect failed:", ai.ID, err)
+					continue
+			}
+
+			// Reserve relay slot
+			_, err = client.Reserve(ctx, n.Host, *ai)
+			if err != nil {
+					fmt.Println("reservation failed on", ai.ID, ":", err)
+			} else {
+					fmt.Println("reservation succeeded on", ai.ID)
+			}
 	}
-	_, err = client.Reserve(ctx, n.Host, *bootstrapAddrInfo)
-	if err != nil {
-			fmt.Println("reservation failed:", err)
-	} else {
-			fmt.Println("reservation succeeded")
-	}
+
+	// bootstrapAddrInfo, err := peer.AddrInfoFromString(*bootstrap)
+	// if err != nil {
+	// 		panic(err)
+	// }
+	// _, err = client.Reserve(ctx, n.Host, *bootstrapAddrInfo)
+	// if err != nil {
+	// 		fmt.Println("reservation failed:", err)
+	// } else {
+	// 		fmt.Println("reservation succeeded")
+	// }
 
 	rd := routing.NewRoutingDiscovery(n.DHT)
 	_, err = rd.Advertise(ctx, "dht-p2p-message")
@@ -127,7 +150,7 @@ func main() {
 					if p.ID == n.Host.ID() {
 						continue
 					}
-					fmt.Println("Discovered peer:", p.ID)
+					// fmt.Println("Discovered peer:", p.ID)
 					// err := n.Host.Connect(ctx, p)
 					// if err != nil {
 					// 	fmt.Println("connect failed:", err)
