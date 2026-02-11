@@ -1,0 +1,100 @@
+# Test plan manifest for P2P Network testing
+name = "p2p-network"
+
+[defaults]
+builder = "docker:go"
+runner = "local:docker"
+
+[builders."docker:go"]
+enabled = true
+go_version = "1.21"
+module_path = "github.com/testground/p2p-network"
+exec_pkg = "."
+
+[builders."exec:go"]
+enabled = true
+module_path = "github.com/testground/p2p-network"
+exec_pkg = "."
+
+[runners."local:docker"]
+enabled = true
+
+[runners."local:exec"]
+enabled = true
+
+[runners."cluster:k8s"]
+enabled = true
+
+###############################################################################
+# Test Cases
+###############################################################################
+
+[[testcases]]
+name = "peer-discovery"
+instances = { min = 2, max = 100, default = 5 }
+
+  [testcases.params]
+  bootstrap_count = { type = "int", desc = "Number of bootstrap nodes", default = 1 }
+  discovery_timeout = { type = "duration", desc = "Timeout for peer discovery", default = "60s" }
+  target_peers = { type = "int", desc = "Target number of peers to discover", default = 3 }
+
+[[testcases]]
+name = "direct-messaging"
+instances = { min = 2, max = 50, default = 3 }
+
+  [testcases.params]
+  message_count = { type = "int", desc = "Number of messages to send", default = 10 }
+  message_size = { type = "int", desc = "Size of each message in bytes", default = 1024 }
+  concurrent_sends = { type = "int", desc = "Number of concurrent senders", default = 1 }
+
+[[testcases]]
+name = "broadcast-test"
+instances = { min = 3, max = 100, default = 10 }
+
+  [testcases.params]
+  broadcast_count = { type = "int", desc = "Number of broadcasts per node", default = 5 }
+  broadcast_interval = { type = "duration", desc = "Interval between broadcasts", default = "2s" }
+
+[[testcases]]
+name = "dht-performance"
+instances = { min = 5, max = 200, default = 20 }
+
+  [testcases.params]
+  lookup_count = { type = "int", desc = "Number of DHT lookups to perform", default = 10 }
+  store_count = { type = "int", desc = "Number of values to store in DHT", default = 5 }
+
+[[testcases]]
+name = "connection-stress"
+instances = { min = 10, max = 500, default = 50 }
+
+  [testcases.params]
+  connection_churn = { type = "int", desc = "Percentage of peers to disconnect/reconnect", default = 20 }
+  churn_interval = { type = "duration", desc = "Interval for connection churn", default = "30s" }
+  test_duration = { type = "duration", desc = "Total test duration", default = "5m" }
+
+[[testcases]]
+name = "network-conditions"
+instances = { min = 3, max = 50, default = 10 }
+
+  [testcases.params]
+  latency_ms = { type = "int", desc = "Network latency in milliseconds", default = 100 }
+  jitter_ms = { type = "int", desc = "Network jitter in milliseconds", default = 10 }
+  bandwidth_mb = { type = "int", desc = "Bandwidth limit in Mbps", default = 10 }
+  packet_loss = { type = "float", desc = "Packet loss percentage", default = 0.0 }
+
+[[testcases]]
+name = "nat-traversal"
+instances = { min = 3, max = 20, default = 5 }
+
+  [testcases.params]
+  relay_count = { type = "int", desc = "Number of relay nodes", default = 2 }
+  nat_type = { type = "string", desc = "Type of NAT simulation (symmetric, cone, restricted)", default = "symmetric" }
+
+[[testcases]]
+name = "scalability"
+instances = { min = 10, max = 1000, default = 100 }
+
+  [testcases.params]
+  ramp_up_duration = { type = "duration", desc = "Time to ramp up all nodes", default = "2m" }
+  steady_duration = { type = "duration", desc = "Duration to maintain steady state", default = "5m" }
+  messages_per_node = { type = "int", desc = "Messages each node should send", default = 10 }
